@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>给最特别的你</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #000;
+            font-family: 'Microsoft YaHei', sans-serif;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+        
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        
+        .container {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            pointer-events: none; /* 让鼠标穿透到 canvas */
+        }
+        
+        h1 {
+            font-size: 3rem;
+            color: #ff69b4;
+            text-shadow: 0 0 20px #ff1493;
+            margin-bottom: 10px;
+            animation: pulse 2s infinite;
+        }
+        
+        .timer {
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+            color: #ddd;
+            text-shadow: 0 0 5px #fff;
+        }
+        
+        .btn-gift {
+            pointer-events: auto; /* 恢复按钮点击 */
+            background: linear-gradient(45deg, #ff1493, #ff69b4);
+            border: none;
+            padding: 15px 40px;
+            color: white;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 0 15px #ff1493;
+            transition: transform 0.3s, box-shadow 0.3s;
+            outline: none;
+        }
+        
+        .btn-gift:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 25px #ff1493;
+        }
+
+        /* 模态框 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #2b1055, #7597de);
+            padding: 30px;
+            border-radius: 20px;
+            width: 80%;
+            max-width: 600px;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 0 30px rgba(255, 105, 180, 0.5);
+            animation: zoomIn 0.5s;
+        }
+
+        .close {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            color: #fff;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* 抽奖模式样式 */
+        .lottery-box {
+            background: #fff;
+            color: #333;
+            padding: 40px;
+            border-radius: 15px;
+            width: 200px;
+            height: 120px;
+            margin: 20px auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 20px rgba(255, 105, 180, 0.3);
+            border: 4px solid #ff69b4;
+            transition: transform 0.1s;
+        }
+
+        .lottery-box h3 {
+            font-size: 1.5rem;
+            margin: 0 0 10px 0;
+            color: #ff1493;
+        }
+
+        .lottery-box p {
+            font-size: 1rem;
+            color: #666;
+            margin: 0;
+        }
+
+        .btn-draw {
+            background: linear-gradient(45deg, #ff1493, #ff69b4);
+            border: none;
+            padding: 12px 30px;
+            color: white;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(255, 20, 147, 0.4);
+            transition: transform 0.2s;
+            margin-bottom: 20px;
+        }
+
+        .btn-draw:active {
+            transform: scale(0.95);
+        }
+
+        .btn-draw:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .my-prizes {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .prize-item {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px 15px;
+            border-radius: 20px;
+            color: #ff1493;
+            font-size: 0.9rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes pulse {
+            0% { text-shadow: 0 0 20px #ff1493; transform: scale(1); }
+            50% { text-shadow: 0 0 40px #ff1493; transform: scale(1.05); }
+            100% { text-shadow: 0 0 20px #ff1493; transform: scale(1); }
+        }
+
+        @keyframes zoomIn {
+            from { transform: scale(0); }
+            to { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 id="greeting">亲爱的，生日快乐！</h1>
+        <div class="timer" id="timer">我们已经相爱了: 计算中...</div>
+        <button class="btn-gift" onclick="openGift()">领取礼物 🎁</button>
+    </div>
+
+    <!-- 模态框 -->
+    <div id="giftModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeGift()">&times;</span>
+            <h2>🎁 你的专属抽奖机</h2>
+            <p>点击按钮抽取你的生日特权！</p>
+            
+            <!-- 抽奖展示区 -->
+            <div class="lottery-box" id="lotteryBox">
+                <h3>❓</h3>
+                <p>准备好了吗？</p>
+            </div>
+
+            <button class="btn-draw" id="drawBtn" onclick="startLottery()">开始抽奖 ✨</button>
+
+            <!-- 结果展示区 -->
+             <div style="color: #fff; margin-top: 10px; font-size: 0.9rem;">已获得的奖励：</div>
+            <div class="my-prizes" id="myPrizes">
+                <!-- 奖品会在这里出现 -->
+            </div>
+        </div>
+    </div>
+
+    <canvas id="heart"></canvas>
+
+    <script>
+        // ================= 配置区域 =================
+        const START_DATE = "2020-10-03"; // 在这里修改你们的纪念日 (格式: YYYY-MM-DD)
+        const GREETING_TEXT = "亲爱的燕君娃，生日快乐 & 妇女节快乐！";
+        
+        // 奖品池配置
+        const PRIZE_POOL = [
+            { name: "💆‍♀️ 按摩券", desc: "随时兑换 30分钟" },
+            { name: "🍽️ 洗碗券", desc: "但我还是想和你一起洗" },
+            { name: "🛍️ 清空购物车", desc: "限额 380元 (穷)" },
+            { name: "❤️ 原谅券", desc: "无理由原谅一次" },
+            { name: "🥤 奶茶券", desc: "随时点，我买单" },
+            { name: "🎬 电影券", desc: "挑你喜欢的看" },
+            { name: "🛌 赖床券", desc: "周末多睡两小时" },
+            { name: "👑 女王券", desc: "听你的，你说啥是啥" }
+        ];
+        // ===========================================
+
+        document.getElementById('greeting').innerText = GREETING_TEXT;
+
+        // 倒计时逻辑
+        function updateTimer() {
+            const start = new Date(START_DATE);
+            const now = new Date();
+            const diff = now - start;
+
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+            document.getElementById('timer').innerText = `我们已经相爱了: ${days}天 ${hours}小时 ${minutes}分 ${seconds}秒`;
+        }
+        setInterval(updateTimer, 1000);
+        updateTimer();
+
+        // 模态框逻辑
+        function openGift() {
+            document.getElementById('giftModal').style.display = "flex";
+        }
+
+        function closeGift() {
+            document.getElementById('giftModal').style.display = "none";
+        }
+
+        // 抽奖逻辑
+        let isDrawing = false;
+        let availablePrizes = [...PRIZE_POOL]; // 复制一份奖品池
+        
+        function startLottery() {
+            if (isDrawing) return;
+            if (availablePrizes.length === 0) {
+                alert("贪心的小猪，奖池已经抽空啦！全部归你！💖");
+                return;
+            }
+
+            isDrawing = true;
+            const box = document.getElementById('lotteryBox');
+            const h3 = box.querySelector('h3');
+            const p = box.querySelector('p');
+            const btn = document.getElementById('drawBtn');
+            
+            btn.disabled = true;
+            btn.innerText = "抽奖中...";
+
+            // 动画效果：快速切换显示
+            let count = 0;
+            const maxCount = 20; // 闪动次数
+            const interval = setInterval(() => {
+                const randomPrize = availablePrizes[Math.floor(Math.random() * availablePrizes.length)];
+                h3.innerText = randomPrize.name;
+                p.innerText = randomPrize.desc;
+                
+                // 简单的缩放动画
+                box.style.transform = count % 2 === 0 ? "scale(1.05)" : "scale(1)";
+                
+                count++;
+                if (count >= maxCount) {
+                    clearInterval(interval);
+                    finalizeLottery();
+                }
+            }, 100);
+        }
+
+        function finalizeLottery() {
+            // 最终中奖逻辑：随机抽取一个
+            const winnerIndex = Math.floor(Math.random() * availablePrizes.length);
+            const winner = availablePrizes[winnerIndex];
+            
+            // 从奖池移除（避免重复抽到）
+            availablePrizes.splice(winnerIndex, 1);
+
+            const box = document.getElementById('lotteryBox');
+            box.style.transform = "scale(1)";
+            
+            // 显示结果
+            box.querySelector('h3').innerText = "🎉 " + winner.name;
+            box.querySelector('p').innerText = winner.desc;
+
+            // 添加到我的奖品区
+            const prizeEl = document.createElement('div');
+            prizeEl.className = 'prize-item';
+            prizeEl.innerText = winner.name;
+            document.getElementById('myPrizes').appendChild(prizeEl);
+
+            // 恢复按钮
+            isDrawing = false;
+            const btn = document.getElementById('drawBtn');
+            btn.disabled = false;
+            
+            if (availablePrizes.length === 0) {
+                btn.innerText = "奖池已空 (完美收官)";
+            } else {
+                btn.innerText = "再抽一次 ✨";
+            }
+        }
+
+        // 粒子爱心逻辑 (保持原样)
+        const canvas = document.getElementById('heart');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let particles = [];
+        
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+        
+        class Particle {
+            constructor() { this.init(); }
+            init() {
+                let t = Math.random() * Math.PI * 2;
+                let x = 16 * Math.pow(Math.sin(t), 3);
+                let y = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
+                const scale = Math.min(width, height) / 35; 
+                this.targetX = x * scale + width / 2;
+                this.targetY = y * scale + height / 2;
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = 0; this.vy = 0;
+                this.friction = 0.95; this.spring = 0.03;
+                this.size = Math.random() * 2 + 1;
+                this.color = "#ff69b4";
+            }
+            update() {
+                const dx = this.targetX - this.x;
+                const dy = this.targetY - this.y;
+                this.vx += dx * this.spring;
+                this.vy += dy * this.spring;
+                this.vx *= this.friction;
+                this.vy *= this.friction;
+                this.x += this.vx;
+                this.y += this.vy;
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        
+        for (let i = 0; i < 800; i++) particles.push(new Particle());
+        
+        function animate() {
+            ctx.fillStyle = "rgba(0, 0, 0, 0.1)";
+            ctx.fillRect(0, 0, width, height);
+            particles.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(animate);
+        }
+        animate();
+    </script>
+</body>
+</html>
