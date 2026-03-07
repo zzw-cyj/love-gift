@@ -441,33 +441,35 @@
         // 优先使用同目录下的 "birthday.mp4" (即使是视频文件，audio标签也能播放声音)
         const MUSIC_URL = "birthday.mp4"; 
 
-        const audioEl = document.getElementById('bgm');
-        audioEl.src = MUSIC_URL;
+        const bgm = document.getElementById('bgm');
+        bgm.src = MUSIC_URL;
         
         // 音乐自动播放处理
-        const bgm = document.getElementById('bgm');
         const musicBtn = document.getElementById('musicBtn');
-        let isPlaying = false;
 
-        function toggleMusic() {
-            if (isPlaying) {
-                bgm.pause();
-                musicBtn.classList.remove('playing');
-                musicBtn.innerText = "🔇";
-            } else {
+        function toggleMusic(e) {
+            if (e) e.stopPropagation(); // 阻止事件冒泡，防止触发 body 的点击播放
+            
+            if (bgm.paused) {
                 bgm.play().then(() => {
                     musicBtn.classList.add('playing');
                     musicBtn.innerText = "🎵";
-                }).catch(e => console.log("播放失败，需用户交互", e));
+                }).catch(err => {
+                    console.log("播放失败:", err);
+                    // 某些浏览器可能需要更明确的用户交互
+                });
+            } else {
+                bgm.pause();
+                musicBtn.classList.remove('playing');
+                musicBtn.innerText = "🔇";
             }
-            isPlaying = !isPlaying;
         }
 
         musicBtn.addEventListener('click', toggleMusic);
 
         // 尝试自动播放（现代浏览器通常会阻止，所以通常需要用户点击一次）
         document.body.addEventListener('click', function() {
-            if (!isPlaying) {
+            if (bgm.paused) {
                 toggleMusic();
             }
         }, { once: true });
