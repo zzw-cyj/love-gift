@@ -254,6 +254,30 @@
             from { transform: scale(0); }
             to { transform: scale(1); }
         }
+        @media (max-width: 768px) {
+            h1 { font-size: 1.8rem; }
+            .timer { font-size: 1rem; }
+            .btn-gift { padding: 10px 25px; font-size: 1rem; }
+            .skills-bar { 
+                width: 95%; 
+                flex-wrap: wrap; 
+                justify-content: center; 
+                bottom: 10px;
+                gap: 8px;
+            }
+            .skill-btn {
+                padding: 6px 10px;
+                font-size: 0.8rem;
+                flex: 1 1 auto; /* 让按钮自适应宽度 */
+                min-width: 80px;
+                white-space: nowrap;
+            }
+            .modal-content { width: 90%; margin: 20% auto; padding: 20px; }
+            .lottery-box { width: 100%; box-sizing: border-box; }
+            
+            /* 移动端优化惊喜文字大小 */
+            #surpriseText { font-size: 3rem !important; }
+        }
     </style>
 </head>
 <body>
@@ -615,9 +639,49 @@
         function resize() {
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
+            // 重新计算爱心粒子位置，确保自适应屏幕
+            if (particles && particles.length > 0) {
+                particles.forEach(p => p.init());
+            }
         }
         window.addEventListener('resize', resize);
         resize();
+
+        // ================= 移动端交互支持 =================
+        // 1. 触摸模拟点击（支持游戏模式）
+        document.addEventListener('touchstart', function(e) {
+            // 如果触摸的是 Canvas 或 Body（非按钮区域），则模拟点击
+            // 注意：某些移动端浏览器可能有300ms延迟，这里直接触发逻辑可能更好，
+            // 但为了兼容现有的 click 监听器，我们尝试模拟
+            if (e.target.tagName === 'CANVAS' || e.target === document.body) {
+                e.preventDefault(); // 防止触发默认的鼠标事件（点击、缩放等）
+                const touch = e.touches[0];
+                
+                // 创建并分发一个点击事件
+                const clickEvent = new MouseEvent('click', {
+                    view: window,
+                    bubbles: true,
+                    cancelable: true,
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                e.target.dispatchEvent(clickEvent);
+                
+                // 同时触发爱心特效（因为 mousemove 在移动端不灵）
+                if (Math.random() < 0.3) {
+                     createHeart(touch.clientX, touch.clientY);
+                }
+            }
+        }, { passive: false });
+
+        // 2. 触摸滑动产生爱心拖尾
+        document.addEventListener('touchmove', function(e) {
+             if (Math.random() < 0.2) { // 限制频率
+                const touch = e.touches[0];
+                createHeart(touch.clientX, touch.clientY);
+            }
+        }, { passive: true });
+
         
         class Particle {
             constructor() { this.init(); }
